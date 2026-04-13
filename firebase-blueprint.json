@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product available in the store",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the product" },
+        "price": { "type": "number", "description": "The current price" },
+        "originalPrice": { "type": "number", "description": "The original price before discount" },
+        "image": { "type": "string", "description": "URL to the product image" },
+        "category": { "type": "string", "description": "Product category" },
+        "badge": { "type": "string", "description": "Optional badge like 'SAVE 35%'" },
+        "stock": { "type": "number", "description": "Available stock" }
+      },
+      "required": ["name", "price", "image", "category"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "A product category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the category" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who placed the order" },
+        "items": { "type": "array", "description": "List of items ordered" },
+        "total": { "type": "number", "description": "Total order amount" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered"], "description": "Order status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the order was placed" }
+      },
+      "required": ["userId", "items", "total", "status", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email", "description": "User email" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "photoURL": { "type": "string", "description": "User photo URL" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User role" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Collection of products"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Collection of categories"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Collection of orders"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user profiles"
+    }
+  }
+}
