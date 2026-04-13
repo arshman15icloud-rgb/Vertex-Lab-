@@ -164,10 +164,23 @@ const Navbar = ({
         </Button>
       </div>
 
-      <Link to="/" className="absolute left-1/2 -translate-x-1/2">
-        <h1 className="text-2xl font-display italic tracking-tighter lowercase text-primary devil-text-glow">
+      <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
+        <img 
+          src="https://i.ibb.co/W45JKtms/hoodie-with-devil-horns-6v35b497xep3a9rf.png" 
+          alt="Vertex Lab Logo" 
+          className="h-10 w-10 object-contain devil-glow mb-1"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            // Fallback if direct link fails
+            e.currentTarget.src = "https://picsum.photos/seed/devil/100/100";
+          }}
+        />
+        <h1 className="text-sm font-display italic tracking-tighter lowercase text-primary devil-text-glow leading-none">
           vertex<span className="font-light text-white">lab</span>
         </h1>
+        <span className="text-[8px] uppercase tracking-[0.2em] text-white/50 font-bold mt-1">
+          your inner darkness
+        </span>
       </Link>
 
       <div className="flex items-center gap-2">
@@ -1422,8 +1435,15 @@ export default function App() {
         {/* Footer */}
         <footer className="bg-muted py-20 px-4 mt-20 border-t border-border">
           <div className="max-w-7xl mx-auto flex flex-col items-center text-center gap-8">
+            <img 
+              src="https://i.ibb.co/W45JKtms/hoodie-with-devil-horns-6v35b497xep3a9rf.png" 
+              alt="Vertex Lab Logo" 
+              className="h-16 w-16 object-contain devil-glow"
+              referrerPolicy="no-referrer"
+            />
             <h2 className="text-4xl font-display tracking-tighter text-primary devil-text-glow">VERTEX LAB</h2>
-            <p className="text-muted-foreground text-sm tracking-wide">High-end streetwear engineered for the modern aesthetic.</p>
+            <p className="text-muted-foreground text-[10px] uppercase tracking-[0.3em] font-bold">your inner darkness</p>
+            <p className="text-muted-foreground text-sm tracking-wide max-w-md">High-end streetwear engineered for the modern aesthetic.</p>
             <div className="flex gap-8 text-[10px] font-bold tracking-widest uppercase text-primary">
               <a href="#" className="hover:text-white transition-colors">Instagram</a>
               <a href="#" className="hover:text-white transition-colors">TikTok</a>
