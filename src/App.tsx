@@ -78,36 +78,16 @@ const Navbar = ({
   cartCount, 
   onOpenCart, 
   user, 
-  onOpenAccount 
+  onOpenAccount,
+  categories
 }: { 
   cartCount: number; 
   onOpenCart: () => void; 
   user: any; 
   onOpenAccount: () => void;
+  categories: Category[];
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data, error } = await supabase.from('categories').select('*').order('name');
-      if (error) console.error("Error fetching categories:", error);
-      if (data) setCategories(data);
-    };
-    fetchCategories();
-
-    // Real-time subscription for categories
-    const channel = supabase
-      .channel('categories_realtime')
-      .on('postgres_changes', { event: '*', table: 'categories', schema: 'public' }, () => {
-        fetchCategories();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border px-4 py-4 flex items-center justify-between">
@@ -217,31 +197,7 @@ const Navbar = ({
   );
 };
 
-const AllProductsPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-      if (error) console.error("Error fetching all products:", error);
-      if (data) setProducts(data);
-      setLoading(false);
-    };
-    fetchProducts();
-
-    const channel = supabase
-      .channel('products_all_realtime')
-      .on('postgres_changes', { event: '*', table: 'products', schema: 'public' }, () => {
-        fetchProducts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
+const AllProductsPage = ({ products, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
   return (
     <section className="px-4 py-20 max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
@@ -265,35 +221,9 @@ const AllProductsPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number
   );
 };
 
-const CategoryPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
+const CategoryPage = ({ products: allProducts, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
   const { categoryName } = useParams();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .ilike('category', categoryName || '');
-      if (error) console.error(`Error fetching products for category ${categoryName}:`, error);
-      if (data) setProducts(data);
-      setLoading(false);
-    };
-    fetchProducts();
-
-    const channel = supabase
-      .channel(`products_category_${categoryName}`)
-      .on('postgres_changes', { event: '*', table: 'products', schema: 'public' }, () => {
-        fetchProducts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [categoryName]);
+  const products = allProducts.filter(p => p.category?.toLowerCase() === categoryName?.toLowerCase());
 
   return (
     <section className="px-4 py-20 max-w-7xl mx-auto min-h-screen">
@@ -341,6 +271,7 @@ const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: 
             alt={product.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           {product.badge && (
@@ -378,30 +309,8 @@ const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: 
   );
 };
 
-const HomePage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').limit(8);
-      if (error) console.error("Error fetching home products:", error);
-      if (data) setProducts(data);
-      setLoading(false);
-    };
-    fetchProducts();
-
-    const channel = supabase
-      .channel('products_home_realtime')
-      .on('postgres_changes', { event: '*', table: 'products', schema: 'public' }, () => {
-        fetchProducts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+const HomePage = ({ products, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
+  const featuredProducts = products.slice(0, 8);
 
   return (
     <>
@@ -463,13 +372,13 @@ const HomePage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: s
               <div key={i} className="aspect-[4/5] bg-muted animate-pulse" />
             ))}
           </div>
-        ) : products.length === 0 ? (
+        ) : featuredProducts.length === 0 ? (
           <div className="py-20 text-center border border-dashed border-primary/20">
             <p className="text-primary/50 uppercase tracking-widest text-xs">No products found in database</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {products.map((product) => (
+            {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
             ))}
           </div>
@@ -479,30 +388,8 @@ const HomePage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: s
   );
 };
 
-const NewArrivalsPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('is_new', true);
-      if (error) console.error("Error fetching new arrivals:", error);
-      if (data) setProducts(data);
-      setLoading(false);
-    };
-    fetchProducts();
-
-    const channel = supabase
-      .channel('products_new_realtime')
-      .on('postgres_changes', { event: '*', table: 'products', schema: 'public' }, () => {
-        fetchProducts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+const NewArrivalsPage = ({ products: allProducts, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
+  const products = allProducts.filter(p => p.is_new);
 
   return (
     <section className="px-4 py-20 max-w-7xl mx-auto min-h-screen">
@@ -531,25 +418,17 @@ const NewArrivalsPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number
   );
 };
 
-const ProductDetailPage = ({ onAddToCart }: { onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
+const ProductDetailPage = ({ products, onAddToCart }: { products: Product[]; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
   const { id } = useParams();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  const product = products.find(p => p.id === id);
   const [activeImage, setActiveImage] = useState<string>("");
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      const { data } = await supabase.from('products').select('*').eq('id', id).single();
-      if (data) {
-        setProduct(data);
-        setActiveImage(data.images && data.images.length > 0 ? data.images[0] : data.image_url);
-      }
-      setLoading(false);
-    };
-    fetchProduct();
-  }, [id]);
+    if (product) {
+      setActiveImage(product.images && product.images.length > 0 ? product.images[0] : product.image_url);
+    }
+  }, [product]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-primary">Loading...</div>;
   if (!product) return <div className="min-h-screen flex items-center justify-center text-primary">Product not found</div>;
 
   const allImages = product.images && product.images.length > 0 ? product.images : [product.image_url];
@@ -817,13 +696,19 @@ const AccountModal = ({
 
 // --- Main App ---
 
-const AdminPanel = ({ user, showToast }: { user: any; showToast: (m: string, t?: 'success' | 'error') => void }) => {
+const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { user: any; showToast: (m: string, t?: 'success' | 'error') => void; globalProducts: Product[]; globalCategories: Category[] }) => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders'>('products');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>(globalProducts);
+  const [categories, setCategories] = useState<Category[]>(globalCategories);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(globalProducts.length === 0);
   const navigate = useNavigate();
+
+  // Update local state when global state changes
+  useEffect(() => {
+    if (globalProducts.length > 0) setProducts(globalProducts);
+    if (globalCategories.length > 0) setCategories(globalCategories);
+  }, [globalProducts, globalCategories]);
 
   // Security check
   useEffect(() => {
@@ -1073,7 +958,10 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  <input type="number" className="w-full bg-background border border-border p-2 text-xs" placeholder="Price" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
+                  <div className="space-y-2">
+                    <input type="number" className="w-full bg-background border border-border p-2 text-xs" placeholder="Sale Price" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
+                    <input type="number" className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Original Price" value={formData.original_price} onChange={e => setFormData({...formData, original_price: Number(e.target.value)})} />
+                  </div>
                 </td>
                 <td className="py-4 px-4">
                   <select className="w-full bg-background border border-border p-2 text-xs" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
@@ -1144,7 +1032,17 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                   ) : p.name}
                 </td>
                 <td className="py-4 px-4 text-white/70">
-                  {editingId === p.id ? <input type="number" className="w-full bg-background border border-border p-2 text-xs" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} /> : `Rs. ${p.price.toLocaleString()}`}
+                  {editingId === p.id ? (
+                    <div className="space-y-2">
+                      <input type="number" className="w-full bg-background border border-border p-2 text-xs" placeholder="Sale Price" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
+                      <input type="number" className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Original Price" value={formData.original_price} onChange={e => setFormData({...formData, original_price: Number(e.target.value)})} />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      <span className="font-bold">Rs. {p.price.toLocaleString()}</span>
+                      {p.original_price > p.price && <span className="text-[10px] line-through opacity-50">Rs. {p.original_price.toLocaleString()}</span>}
+                    </div>
+                  )}
                 </td>
                 <td className="py-4 px-4">
                   {editingId === p.id ? (
@@ -1345,10 +1243,24 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [globalProducts, setGlobalProducts] = useState<Product[]>([]);
+  const [globalCategories, setGlobalCategories] = useState<Category[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchGlobalData = async () => {
+    const [pRes, cRes] = await Promise.all([
+      supabase.from('products').select('*').order('created_at', { ascending: false }),
+      supabase.from('categories').select('*').order('name')
+    ]);
+    
+    if (pRes.data) setGlobalProducts(pRes.data);
+    if (cRes.data) setGlobalCategories(cRes.data);
+    setProductsLoading(false);
   };
 
   useEffect(() => {
@@ -1360,7 +1272,27 @@ export default function App() {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    fetchGlobalData();
+
+    const pChannel = supabase
+      .channel('global_products_realtime')
+      .on('postgres_changes', { event: '*', table: 'products', schema: 'public' }, () => {
+        fetchGlobalData();
+      })
+      .subscribe();
+
+    const cChannel = supabase
+      .channel('global_categories_realtime')
+      .on('postgres_changes', { event: '*', table: 'categories', schema: 'public' }, () => {
+        fetchGlobalData();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(pChannel);
+      supabase.removeChannel(cChannel);
+    };
   }, []);
 
   const handleLogin = async (email: string, pass: string, isSignUp: boolean) => {
@@ -1475,15 +1407,16 @@ export default function App() {
           onOpenCart={() => setIsCartOpen(true)}
           user={user}
           onOpenAccount={() => setIsAccountOpen(true)}
+          categories={globalCategories}
         />
 
         <Routes>
-          <Route path="/" element={<HomePage onAddToCart={addToCart} />} />
-          <Route path="/products" element={<AllProductsPage onAddToCart={addToCart} />} />
-          <Route path="/new-arrivals" element={<NewArrivalsPage onAddToCart={addToCart} />} />
-          <Route path="/category/:categoryName" element={<CategoryPage onAddToCart={addToCart} />} />
-          <Route path="/product/:id" element={<ProductDetailPage onAddToCart={addToCart} />} />
-          <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} />} />
+          <Route path="/" element={<HomePage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
+          <Route path="/products" element={<AllProductsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
+          <Route path="/new-arrivals" element={<NewArrivalsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
+          <Route path="/category/:categoryName" element={<CategoryPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
+          <Route path="/product/:id" element={<ProductDetailPage products={globalProducts} onAddToCart={addToCart} />} />
+          <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />} />
         </Routes>
 
         {/* Footer */}
