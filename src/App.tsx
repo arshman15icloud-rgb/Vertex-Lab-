@@ -48,8 +48,8 @@ interface Order {
 }
 
 // --- Utilities ---
-const getDirectImageUrl = (url: string) => {
-  if (!url) return "";
+const getDirectImageUrl = (url: string | undefined | null) => {
+  if (!url) return undefined;
   
   // Handle Google Drive links
   if (url.includes('drive.google.com')) {
@@ -269,7 +269,7 @@ const CategoryPage = ({ products: allProducts, loading, onAddToCart }: { product
 };
 
 const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void; key?: string | number }) => {
-  const displayImage = product.images && product.images.length > 0 ? product.images[0] : product.image_url;
+  const displayImage = (product.images && product.images.length > 0) ? product.images[0] : (product.image_url || undefined);
   
   return (
     <motion.div
@@ -434,17 +434,17 @@ const NewArrivalsPage = ({ products: allProducts, loading, onAddToCart }: { prod
 const ProductDetailPage = ({ products, onAddToCart }: { products: Product[]; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
   const { id } = useParams();
   const product = products.find(p => p.id === id);
-  const [activeImage, setActiveImage] = useState<string>("");
+  const [activeImage, setActiveImage] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (product) {
-      setActiveImage(product.images && product.images.length > 0 ? product.images[0] : product.image_url);
+      setActiveImage((product.images && product.images.length > 0) ? product.images[0] : (product.image_url || undefined));
     }
   }, [product]);
 
   if (!product) return <div className="min-h-screen flex items-center justify-center text-primary">Product not found</div>;
 
-  const allImages = product.images && product.images.length > 0 ? product.images : [product.image_url];
+  const allImages = (product.images && product.images.length > 0) ? product.images : (product.image_url ? [product.image_url] : []);
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "");
   const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "");
   const [quantity, setQuantity] = useState(1);
@@ -648,8 +648,19 @@ const AccountModal = ({
               )}
 
               <Button 
-                variant="outline" 
-                className="w-full border-primary text-primary hover:bg-primary/10 rounded-none py-6 font-bold gap-2"
+                variant="outline"
+                className="w-full border-primary text-primary hover:bg-primary/10 rounded-none py-6 font-bold gap-2 uppercase tracking-widest text-[10px]"
+                onClick={() => {
+                  navigate("/my-orders");
+                  onClose();
+                }}
+              >
+                <Package size={18} /> My Orders
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                className="w-full text-red-500 hover:bg-red-500/10 rounded-none py-6 font-bold gap-2 uppercase tracking-widest text-[10px]"
                 onClick={onLogout}
               >
                 <LogOut size={20} /> Logout
@@ -704,6 +715,113 @@ const AccountModal = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const UserOrders = ({ user }: { user: any }) => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/");
+      return;
+    }
+
+    const fetchUserOrders = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`customer_email.eq.${user.email},user_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching user orders:", error);
+      } else {
+        setOrders(data || []);
+      }
+      setLoading(false);
+    };
+
+    fetchUserOrders();
+  }, [user, navigate]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-primary">Loading your orders...</div>;
+
+  return (
+    <div className="min-h-screen bg-background pt-20 pb-40 px-4">
+      <div className="max-w-4xl mx-auto space-y-12">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-primary">
+            <ArrowLeft size={24} />
+          </Button>
+          <h1 className="text-4xl font-display tracking-tighter text-primary devil-text-glow uppercase">My Orders</h1>
+        </div>
+
+        <div className="space-y-6">
+          {orders.length === 0 ? (
+            <div className="py-20 text-center border border-dashed border-border">
+              <p className="text-muted-foreground uppercase tracking-widest text-sm">You haven't placed any orders yet.</p>
+              <Link to="/products">
+                <Button className="mt-6 bg-primary text-white rounded-none uppercase tracking-widest text-[10px] font-bold">Start Shopping</Button>
+              </Link>
+            </div>
+          ) : (
+            orders.map(order => (
+              <div key={order.id} className="bg-muted/30 border border-border p-6 space-y-4">
+                <div className="flex flex-wrap justify-between items-start gap-4 border-b border-border pb-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Order ID</p>
+                    <p className="text-xs font-mono text-white">#{order.id.slice(0, 8)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Status</p>
+                    <Badge className={cn(
+                      "rounded-none uppercase text-[8px] mt-1",
+                      order.status === 'completed' ? "bg-green-500/20 text-green-500" : 
+                      order.status === 'pending' ? "bg-yellow-500/20 text-yellow-500" : 
+                      "bg-blue-500/20 text-blue-500"
+                    )}>
+                      {order.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Date</p>
+                    <p className="text-xs text-white">{new Date(order.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Total</p>
+                    <p className="text-lg font-bold text-white">Rs. {order.total.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Items</p>
+                  <div className="grid gap-3">
+                    {order.items?.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center text-sm">
+                        <div className="flex items-center gap-3">
+                          <span className="text-primary font-bold">{item.quantity}x</span>
+                          <div>
+                            <p className="text-white font-medium">{item.name}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase">
+                              {[item.size, item.color].filter(v => v && v !== 'N/A').join(' / ')}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-white/70">Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -791,6 +909,65 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
           {activeTab === 'categories' && <AdminCategories categories={categories} onRefresh={fetchData} showToast={showToast} />}
           {activeTab === 'orders' && <AdminOrders orders={orders} onRefresh={fetchData} showToast={showToast} />}
         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Admin Components ---
+
+const VariationInput = ({ 
+  label, 
+  values, 
+  onChange 
+}: { 
+  label: string; 
+  values: string[]; 
+  onChange: (newValues: string[]) => void 
+}) => {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleAdd = () => {
+    if (inputValue.trim()) {
+      onChange([...values, inputValue.trim()]);
+      setInputValue("");
+    }
+  };
+
+  return (
+    <div className="space-y-2 p-3 bg-white/5 border border-white/10">
+      <p className="text-[10px] uppercase tracking-widest text-primary font-bold">{label}</p>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {values.map((v, i) => (
+          <div key={i} className="flex items-center bg-primary text-white px-2 py-1 gap-2 text-[10px] font-bold">
+            <span>{v}</span>
+            <button onClick={(e) => { e.preventDefault(); onChange(values.filter((_, idx) => idx !== i)); }} className="hover:text-white/70">
+              <X size={10} />
+            </button>
+          </div>
+        ))}
+        {values.length === 0 && <span className="text-[8px] text-muted-foreground uppercase italic">No {label.toLowerCase()} added</span>}
+      </div>
+      <div className="flex gap-1">
+        <input 
+          className="flex-1 bg-background border border-border p-1 text-[10px] text-white focus:outline-none focus:border-primary" 
+          placeholder={`Add ${label.toLowerCase()}...`}
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+        />
+        <button 
+          type="button"
+          onClick={(e) => { e.preventDefault(); handleAdd(); }}
+          className="bg-primary/20 border border-primary/30 p-1 text-primary hover:bg-primary/30 transition-colors"
+        >
+          <Plus size={12} />
+        </button>
       </div>
     </div>
   );
@@ -964,10 +1141,12 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <input className="w-full bg-background border border-border p-2 text-xs" placeholder="Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                    <input className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Sizes (S,M,L...)" value={formData.sizes?.join(',')} onChange={e => setFormData({...formData, sizes: e.target.value.split(',').map(s => s.trim()).filter(s => s)})} />
-                    <input className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Colors (Black,White...)" value={formData.colors?.join(',')} onChange={e => setFormData({...formData, colors: e.target.value.split(',').map(s => s.trim()).filter(s => s)})} />
+                    <div className="grid grid-cols-1 gap-2">
+                      <VariationInput label="Sizes" values={formData.sizes || []} onChange={vals => setFormData({...formData, sizes: vals})} />
+                      <VariationInput label="Colors" values={formData.colors || []} onChange={vals => setFormData({...formData, colors: vals})} />
+                    </div>
                   </div>
                 </td>
                 <td className="py-4 px-4">
@@ -991,14 +1170,14 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
               <tr key={p.id} className="border-b border-border hover:bg-white/5 transition-colors">
                 <td className="py-4 px-4">
                   <div className="flex flex-wrap gap-1 max-w-[150px]">
-                    {(editingId === p.id ? (formData.images || []) : (p.images || [p.image_url])).slice(0, 3).map((img, idx) => (
+                    {(editingId === p.id ? (formData.images || []) : (p.images || (p.image_url ? [p.image_url] : []))).slice(0, 3).map((img, idx) => (
                       <img 
                         key={idx}
                         src={getDirectImageUrl(img)} 
                         className="w-8 h-8 object-cover border border-border" 
                       />
                     ))}
-                    {(editingId === p.id ? (formData.images || []) : (p.images || [p.image_url])).length > 3 && (
+                    {(editingId === p.id ? (formData.images || []) : (p.images || (p.image_url ? [p.image_url] : []))).length > 3 && (
                       <div className="w-8 h-8 bg-muted flex items-center justify-center text-[8px] font-bold">
                         +{(editingId === p.id ? (formData.images || []) : (p.images || [p.image_url])).length - 3}
                       </div>
@@ -1007,10 +1186,12 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                 </td>
                 <td className="py-4 px-4 font-bold text-white">
                   {editingId === p.id ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                       <input className="w-full bg-background border border-border p-2 text-xs" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                      <input className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Sizes (S,M,L...)" value={formData.sizes?.join(',')} onChange={e => setFormData({...formData, sizes: e.target.value.split(',').map(s => s.trim()).filter(s => s)})} />
-                      <input className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Colors (Black,White...)" value={formData.colors?.join(',')} onChange={e => setFormData({...formData, colors: e.target.value.split(',').map(s => s.trim()).filter(s => s)})} />
+                      <div className="grid grid-cols-1 gap-2">
+                        <VariationInput label="Sizes" values={formData.sizes || []} onChange={vals => setFormData({...formData, sizes: vals})} />
+                        <VariationInput label="Colors" values={formData.colors || []} onChange={vals => setFormData({...formData, colors: vals})} />
+                      </div>
                       <div className="relative">
                         <input 
                           type="file" 
@@ -1200,16 +1381,26 @@ const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefr
             {orders.length === 0 ? (
               <tr><td colSpan={6} className="py-20 text-center text-muted-foreground uppercase tracking-widest text-[10px]">No orders found</td></tr>
             ) : orders.map(o => (
-              <tr key={o.id} className="border-b border-border">
-                <td className="py-4 px-4 font-mono text-[10px] text-primary">{o.id.slice(0, 8)}...</td>
-                <td className="py-4 px-4 text-white">{o.customer_email}</td>
+              <tr key={o.id} className="border-b border-border hover:bg-white/5 transition-colors">
+                <td className="py-4 px-4">
+                  <div className="text-primary font-bold text-[10px] uppercase tracking-tighter">#{o.id.slice(0, 5)}</div>
+                  <div className="text-[8px] text-muted-foreground">{new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                </td>
+                <td className="py-4 px-4">
+                  <div className="text-white font-bold text-xs">{o.customer_email || 'No Email'}</div>
+                </td>
                 <td className="py-4 px-4">
                   <div className="font-bold text-white">Rs. {o.total.toLocaleString()}</div>
-                  <div className="text-[8px] text-muted-foreground uppercase mt-1">
+                  <div className="space-y-1 mt-2">
                     {o.items?.map((item: any, i: number) => (
-                      <div key={i}>
-                        {item.quantity}x {item.name} 
-                        {(item.size || item.color) && ` (${[item.size, item.color].filter(Boolean).join('/')})`}
+                      <div key={i} className="text-[9px] text-muted-foreground uppercase flex items-center gap-2">
+                        <span className="bg-primary/20 text-primary px-1 font-bold">{item.quantity}x</span>
+                        <span>{item.name}</span>
+                        {(item.size !== 'N/A' || item.color !== 'N/A') && (
+                          <span className="text-[8px] opacity-50">
+                            [{[item.size, item.color].filter(v => v && v !== 'N/A').join(' / ')}]
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1379,9 +1570,15 @@ export default function App() {
       return;
     }
 
+    if (cart.length === 0) {
+      showToast("Your bag is empty", 'error');
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('orders').insert([{
-        customer_email: user.email,
+      const orderData = {
+        user_id: user.id,
+        customer_email: user.email || 'Guest/Unknown',
         total: cartTotal,
         status: 'pending',
         items: cart.map(item => ({
@@ -1389,18 +1586,23 @@ export default function App() {
           name: item.product.name,
           price: item.product.price,
           quantity: item.quantity,
-          size: item.selectedSize,
-          color: item.selectedColor
+          size: item.selectedSize || 'N/A',
+          color: item.selectedColor || 'N/A'
         }))
-      }]);
+      };
 
-      if (error) throw error;
+      const { error } = await supabase.from('orders').insert([orderData]);
+
+      if (error) {
+        console.error("Checkout Error Details:", error);
+        throw error;
+      }
 
       showToast("Order placed successfully!");
       setCart([]);
       setIsCartOpen(false);
     } catch (error: any) {
-      showToast("Error placing order: " + error.message, 'error');
+      showToast("Error: " + (error.message || "Could not place order"), 'error');
     }
   };
 
@@ -1430,6 +1632,7 @@ export default function App() {
           <Route path="/category/:categoryName" element={<CategoryPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
           <Route path="/product/:id" element={<ProductDetailPage products={globalProducts} onAddToCart={addToCart} />} />
           <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />} />
+          <Route path="/my-orders" element={<UserOrders user={user} />} />
         </Routes>
 
         {/* Footer */}
