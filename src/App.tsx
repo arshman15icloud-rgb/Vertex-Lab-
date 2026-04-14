@@ -124,13 +124,6 @@ const Navbar = ({
                 >
                   ALL PRODUCTS
                 </Link>
-                <Link
-                  to="/new-arrivals"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-2xl font-display font-bold tracking-tighter text-foreground hover:text-primary transition-colors"
-                >
-                  NEW ARRIVALS
-                </Link>
                 {user?.email === "arshman15icloud@gmail.com" && (
                   <Link
                     to="/admin"
@@ -140,21 +133,6 @@ const Navbar = ({
                     <LayoutDashboard size={24} /> ADMIN PANEL
                   </Link>
                 )}
-                <div className="pt-4 border-t border-border">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4">Categories</p>
-                  <div className="flex flex-col gap-4">
-                    {categories.map((cat) => (
-                      <Link
-                        key={cat.id}
-                        to={`/category/${cat.name.toLowerCase()}`}
-                        onClick={() => setIsMenuOpen(false)}
-                        className="text-xl font-display font-bold tracking-tighter text-foreground hover:text-primary transition-colors uppercase"
-                      >
-                        {cat.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
               </div>
             </div>
           </SheetContent>
@@ -222,40 +200,6 @@ const AllProductsPage = ({ products, loading, onAddToCart }: { products: Product
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="aspect-[4/5] bg-muted animate-pulse" />
           ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-};
-
-const CategoryPage = ({ products: allProducts, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
-  const { categoryName } = useParams();
-  const products = allProducts.filter(p => p.category?.toLowerCase() === categoryName?.toLowerCase());
-
-  return (
-    <section className="px-4 py-20 max-w-7xl mx-auto min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-        <h2 className="text-5xl md:text-7xl font-display tracking-tighter text-primary uppercase devil-text-glow">{categoryName}</h2>
-        <p className="text-muted-foreground text-sm uppercase tracking-widest">{products.length} Items</p>
-      </div>
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="aspect-[4/5] bg-muted animate-pulse" />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-          <p className="text-xl text-muted-foreground uppercase tracking-widest">No products found in this category</p>
-          <Link to="/products">
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">View All Products</Button>
-          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -357,11 +301,6 @@ const HomePage = ({ products, loading, onAddToCart }: { products: Product[]; loa
                 Shop Collection
               </Button>
             </Link>
-            <Link to="/new-arrivals">
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 rounded-none px-12 py-7 text-xs font-bold tracking-[0.2em] uppercase">
-                New Arrivals
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -372,11 +311,6 @@ const HomePage = ({ products, loading, onAddToCart }: { products: Product[]; loa
           <h3 className="text-3xl md:text-5xl font-display tracking-tighter text-primary">
             LATEST <br /> RELEASES
           </h3>
-          <Link to="/new-arrivals">
-            <Button variant="ghost" className="text-primary text-xs font-bold tracking-widest uppercase">
-              View All
-            </Button>
-          </Link>
         </div>
 
         {loading ? (
@@ -398,36 +332,6 @@ const HomePage = ({ products, loading, onAddToCart }: { products: Product[]; loa
         )}
       </section>
     </>
-  );
-};
-
-const NewArrivalsPage = ({ products: allProducts, loading, onAddToCart }: { products: Product[]; loading: boolean; onAddToCart: (p: Product, q?: number, s?: string, c?: string) => void }) => {
-  const products = allProducts.filter(p => p.is_new);
-
-  return (
-    <section className="px-4 py-20 max-w-7xl mx-auto min-h-screen">
-      <h2 className="text-5xl md:text-7xl font-display tracking-tighter text-primary mb-12 devil-text-glow">NEW ARRIVALS</h2>
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="aspect-[4/5] bg-muted animate-pulse" />
-          ))}
-        </div>
-      ) : products.length === 0 ? (
-        <div className="py-20 text-center border border-dashed border-primary/20">
-          <p className="text-primary/50 uppercase tracking-widest text-xs">No new arrivals found</p>
-          <Link to="/products" className="mt-4 inline-block">
-            <Button variant="link" className="text-primary uppercase tracking-widest text-[10px]">View All Products</Button>
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} onAddToCart={onAddToCart} />
-          ))}
-        </div>
-      )}
-    </section>
   );
 };
 
@@ -888,13 +792,6 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
               <Package className="mr-2" size={16} /> Products
             </Button>
             <Button 
-              variant={activeTab === 'categories' ? 'default' : 'outline'}
-              className={cn("rounded-none uppercase tracking-widest text-[10px] font-bold py-6 px-8", activeTab === 'categories' ? "bg-primary text-white" : "border-primary text-primary")}
-              onClick={() => setActiveTab('categories')}
-            >
-              <List className="mr-2" size={16} /> Categories
-            </Button>
-            <Button 
               variant={activeTab === 'orders' ? 'default' : 'outline'}
               className={cn("rounded-none uppercase tracking-widest text-[10px] font-bold py-6 px-8", activeTab === 'orders' ? "bg-primary text-white" : "border-primary text-primary")}
               onClick={() => setActiveTab('orders')}
@@ -906,7 +803,6 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
 
         <div className="bg-muted/30 border border-border p-8">
           {activeTab === 'products' && <AdminProducts products={products} categories={categories} onRefresh={fetchData} showToast={showToast} />}
-          {activeTab === 'categories' && <AdminCategories categories={categories} onRefresh={fetchData} showToast={showToast} />}
           {activeTab === 'orders' && <AdminOrders orders={orders} onRefresh={fetchData} showToast={showToast} />}
         </div>
       </div>
@@ -1085,7 +981,7 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
           className="bg-primary text-white rounded-none uppercase tracking-widest text-[10px] font-bold"
           onClick={() => {
             setEditingId('new');
-            setFormData({ name: '', price: 0, original_price: 0, image_url: '', images: [], category: categories[0]?.name || '', description: '', sizes: [], colors: [] });
+            setFormData({ name: '', price: 0, original_price: 0, image_url: '', images: [], description: '', sizes: [], colors: [] });
           }}
         >
           <Plus size={16} className="mr-2" /> Add Product
@@ -1099,7 +995,6 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
               <th className="py-4 px-4">Images</th>
               <th className="py-4 px-4">Name</th>
               <th className="py-4 px-4">Price</th>
-              <th className="py-4 px-4">Category</th>
               <th className="py-4 px-4 text-right">Actions</th>
             </tr>
           </thead>
@@ -1154,11 +1049,6 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                     <input type="number" className="w-full bg-background border border-border p-2 text-xs" placeholder="Sale Price" value={formData.price} onChange={e => setFormData({...formData, price: Number(e.target.value)})} />
                     <input type="number" className="w-full bg-background border border-border p-2 text-[10px]" placeholder="Original Price" value={formData.original_price} onChange={e => setFormData({...formData, original_price: Number(e.target.value)})} />
                   </div>
-                </td>
-                <td className="py-4 px-4">
-                  <select className="w-full bg-background border border-border p-2 text-xs" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
                 </td>
                 <td className="py-4 px-4 text-right space-x-2">
                   <Button variant="ghost" size="icon" className="text-green-500" onClick={() => handleSave()}><Save size={16} /></Button>
@@ -1238,13 +1128,6 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
                     </div>
                   )}
                 </td>
-                <td className="py-4 px-4">
-                  {editingId === p.id ? (
-                    <select className="w-full bg-background border border-border p-2 text-xs" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                      {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
-                  ) : <Badge className="bg-border text-white text-[8px] uppercase">{p.category}</Badge>}
-                </td>
                 <td className="py-4 px-4 text-right space-x-2">
                   {editingId === p.id ? (
                     <>
@@ -1262,88 +1145,6 @@ const AdminProducts = ({ products, categories, onRefresh, showToast }: { product
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-};
-
-const AdminCategories = ({ categories, onRefresh, showToast }: { categories: Category[], onRefresh: () => void, showToast: (m: string, t?: 'success' | 'error') => void }) => {
-  const [newCat, setNewCat] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-
-  const handleAdd = async () => {
-    if (!newCat) return;
-    try {
-      const { error } = await supabase.from('categories').insert([{ name: newCat }]);
-      if (error) {
-        console.error("Category Add Error:", error);
-        throw error;
-      }
-      setNewCat("");
-      await onRefresh();
-      showToast("Category added successfully!");
-    } catch (error: any) {
-      showToast("Error adding category: " + error.message, 'error');
-    }
-  };
-
-  const handleUpdate = async (id: string) => {
-    if (!editName) return;
-    await supabase.from('categories').update({ name: editName }).eq('id', id);
-    setEditingId(null);
-    onRefresh();
-    showToast("Category updated");
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Delete category? This will not delete products in this category but they might not show up correctly.")) {
-      await supabase.from('categories').delete().eq('id', id);
-      onRefresh();
-      showToast("Category deleted");
-    }
-  };
-
-  return (
-    <div className="space-y-8 max-w-2xl">
-      <h3 className="text-xl font-bold text-white uppercase tracking-widest">Manage Categories</h3>
-      <div className="flex gap-4">
-        <input 
-          className="flex-1 bg-background border border-border px-4 py-3 text-white focus:outline-none focus:border-primary" 
-          placeholder="New Category Name"
-          value={newCat}
-          onChange={e => setNewCat(e.target.value)}
-        />
-        <Button className="bg-primary text-white rounded-none px-8" onClick={handleAdd}>Add</Button>
-      </div>
-      <div className="space-y-2">
-        {categories.map(c => (
-          <div key={c.id} className="flex items-center justify-between p-4 border border-border hover:bg-white/5">
-            {editingId === c.id ? (
-              <input 
-                className="flex-1 bg-background border border-border px-2 py-1 text-white text-xs mr-4"
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                autoFocus
-              />
-            ) : (
-              <span className="font-bold text-white uppercase tracking-widest text-xs">{c.name}</span>
-            )}
-            <div className="flex gap-2">
-              {editingId === c.id ? (
-                <>
-                  <Button variant="ghost" size="icon" className="text-green-500" onClick={() => handleUpdate(c.id)}><Save size={16} /></Button>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => setEditingId(null)}><X size={16} /></Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="ghost" size="icon" className="text-primary" onClick={() => { setEditingId(c.id); setEditName(c.name); }}><Edit size={16} /></Button>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(c.id)}><Trash size={16} /></Button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -1443,7 +1244,10 @@ const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefr
 
 export default function App() {
   const [user, setUser] = useState<any>(null);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('vertex_lab_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -1468,12 +1272,21 @@ export default function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+    // Check for Admin Bypass session first
+    const savedBypass = localStorage.getItem('admin_bypass_session');
+    if (savedBypass) {
+      setUser(JSON.parse(savedBypass));
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null);
+      });
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      // Only update if we're not in a bypass session
+      if (!localStorage.getItem('admin_bypass_session')) {
+        setUser(session?.user ?? null);
+      }
     });
 
     fetchGlobalData();
@@ -1499,11 +1312,17 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem('vertex_lab_cart', JSON.stringify(cart));
+  }, [cart]);
+
   const handleLogin = async (email: string, pass: string, isSignUp: boolean) => {
     // --- ADMIN BYPASS ---
     // This allows you to log in even if Supabase is rate-limiting you
     if (email === "arshman15icloud@gmail.com" && pass === "arshman0123") {
-      setUser({ email: "arshman15icloud@gmail.com", id: "admin-bypass" });
+      const adminUser = { email: "arshman15icloud@gmail.com", id: "admin-bypass" };
+      setUser(adminUser);
+      localStorage.setItem('admin_bypass_session', JSON.stringify(adminUser));
       setIsAccountOpen(false);
       return;
     }
@@ -1524,6 +1343,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('admin_bypass_session');
     await supabase.auth.signOut();
     setIsAccountOpen(false);
   };
@@ -1628,8 +1448,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomePage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
           <Route path="/products" element={<AllProductsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
-          <Route path="/new-arrivals" element={<NewArrivalsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
-          <Route path="/category/:categoryName" element={<CategoryPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
           <Route path="/product/:id" element={<ProductDetailPage products={globalProducts} onAddToCart={addToCart} />} />
           <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />} />
           <Route path="/my-orders" element={<UserOrders user={user} />} />
