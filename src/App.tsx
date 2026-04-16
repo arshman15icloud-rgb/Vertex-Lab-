@@ -160,12 +160,12 @@ const Navbar = ({
 
         <Link to="/" className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center group">
           <img 
-            src="https://i.ibb.co/1frr1Y2p/logo.png" 
+            src="https://i.ibb.co/1frr1Y2p/file-00000000cc7071fa90708dc0dd61a9f4.png" 
             alt="Vertex Store" 
             className="h-12 md:h-16 w-auto object-contain group-hover:scale-125 transition-all duration-700 filter drop-shadow-[0_0_20px_rgba(255,107,0,0.3)]"
             referrerPolicy="no-referrer"
             onError={(e) => {
-              e.currentTarget.src = "https://ibb.co/1frr1Y2p"; 
+              e.currentTarget.src = "https://picsum.photos/seed/vertex/200/200"; 
             }}
           />
         </Link>
