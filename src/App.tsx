@@ -1835,16 +1835,13 @@ export default function App() {
           rel="noopener noreferrer"
           initial={{ scale: 0, opacity: 0, rotate: -45 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          whileHover={{ scale: 1.15, rotate: 5 }}
+          whileHover={{ scale: 1.1, rotate: 5 }}
           whileTap={{ scale: 0.9 }}
-          className="fixed bottom-10 right-10 z-[100] primary-gradient text-white p-5 rounded-[2rem] shadow-[0_20px_50px_rgba(255,107,0,0.3)] brand-glow flex items-center justify-center group/wa transition-all duration-500"
+          className="fixed bottom-6 right-6 z-[100] primary-gradient text-white p-3.5 rounded-2xl shadow-[0_15px_30px_rgba(255,107,0,0.3)] brand-glow flex items-center justify-center group/wa transition-all duration-500"
         >
-          <MessageCircle size={28} fill="white" className="group-hover/wa:scale-110 transition-transform" />
-          <div className="absolute -top-3 -right-3 bg-red-600 text-white text-[9px] font-black px-3 py-1.5 rounded-full border-2 border-black shadow-xl animate-bounce">
+          <MessageCircle size={22} fill="white" className="group-hover/wa:scale-110 transition-transform" />
+          <div className="absolute -top-2 -right-2 bg-red-600 text-white text-[7px] font-black px-2 py-1 rounded-full border border-black shadow-lg animate-bounce">
             LIVE
-          </div>
-          <div className="absolute right-full mr-4 bg-black/80 backdrop-blur-md text-white text-[10px] font-black px-4 py-2 rounded-full opacity-0 group-hover/wa:opacity-100 transition-opacity whitespace-nowrap border border-white/10 tracking-widest uppercase">
-            Chat with Vertex
           </div>
         </motion.a>
 
