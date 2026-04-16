@@ -1556,8 +1556,13 @@ const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefr
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('vertex_store_cart');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('vertex_store_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Failed to parse cart from localStorage", e);
+      return [];
+    }
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
@@ -1585,10 +1590,17 @@ export default function App() {
 
   useEffect(() => {
     // Check for Admin Bypass session first
-    const savedBypass = localStorage.getItem('admin_bypass_session');
-    if (savedBypass) {
-      setUser(JSON.parse(savedBypass));
-    } else {
+    try {
+      const savedBypass = localStorage.getItem('admin_bypass_session');
+      if (savedBypass) {
+        setUser(JSON.parse(savedBypass));
+      } else {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setUser(session?.user ?? null);
+        });
+      }
+    } catch (e) {
+      console.error("Failed to parse admin bypass session", e);
       supabase.auth.getSession().then(({ data: { session } }) => {
         setUser(session?.user ?? null);
       });
