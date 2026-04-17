@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ReactNode } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, Search, User, ShoppingBag, X, ChevronRight, ChevronLeft, Plus, Minus, Trash2, LogOut, ArrowLeft, LayoutDashboard, Package, List, ShoppingCart, Save, Edit, Trash, Upload, Zap, Users, MessageCircle, Check, Radio, Bell, Clock, Truck, ShieldCheck } from "lucide-react";
+import { Menu, Search, User, ShoppingBag, X, ChevronRight, ChevronLeft, Plus, Minus, Trash2, LogOut, ArrowLeft, LayoutDashboard, Package, List, ShoppingCart, Save, Edit, Trash, Upload, Zap, Users, MessageCircle, Check, Clock, Truck, ShieldCheck } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -829,7 +829,7 @@ const AccountModal = ({
 // --- Main App ---
 
 const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { user: any; showToast: (m: string, t?: 'success' | 'error') => void; globalProducts: Product[]; globalCategories: Category[] }) => {
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders' | 'users' | 'broadcast'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'orders' | 'users'>('products');
   const [products, setProducts] = useState<Product[]>(globalProducts);
   const [categories, setCategories] = useState<Category[]>(globalCategories);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -956,13 +956,6 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
             >
               <Users className="mr-3" size={16} /> Users
             </Button>
-            <Button 
-              variant="ghost"
-              className={cn("rounded-full uppercase tracking-widest text-[10px] font-bold py-6 px-8 transition-all whitespace-nowrap", activeTab === 'broadcast' ? "bg-primary text-white brand-glow" : "text-white/40 hover:text-white hover:bg-white/5")}
-              onClick={() => setActiveTab('broadcast')}
-            >
-              <Radio className="mr-3" size={16} /> Broadcast
-            </Button>
           </div>
         </div>
 
@@ -972,7 +965,6 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
             {activeTab === 'categories' && <AdminCategories categories={categories} onRefresh={fetchData} showToast={showToast} />}
             {activeTab === 'orders' && <AdminOrders orders={orders} onRefresh={fetchData} showToast={showToast} />}
             {activeTab === 'users' && <AdminUsers users={users} onRefresh={fetchData} showToast={showToast} />}
-            {activeTab === 'broadcast' && <AdminBroadcast showToast={showToast} />}
           </div>
         </div>
       </div>
@@ -1482,134 +1474,6 @@ const AdminUsers = ({ users, onRefresh, showToast }: { users: any[], onRefresh: 
     </div>
   );
 };
-
-const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
-  const [title, setTitle] = useState("New Drop Alert!");
-  const [body, setBody] = useState("Something massive just landed. Check the store now.");
-  const [url, setUrl] = useState("/");
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState<{ sent: number; removed: number } | null>(null);
-
-  const handleBroadcast = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Broadcast Signal Initiated...");
-    setLoading(true);
-    setStats(null);
-    try {
-      const response = await fetch("/api/push/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          body,
-          url,
-          adminEmail: "admin@vertexlab.com",
-          adminPass: "Vertexlab0123"
-        })
-      });
-      
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        throw new Error(`Critical Logic Error (Status: ${response.status}). The server might be unreachable.`);
-      }
-
-      if (response.ok && data.success) {
-        showToast(`Manifest Broadcasted to ${data.sentCount} units!`);
-        setStats({ sent: data.sentCount, removed: data.removedCount });
-      } else {
-        throw new Error(data.error || data.message || "Broadcast failed");
-      }
-    } catch (err: any) {
-      showToast(err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h3 className="text-xl md:text-2xl font-display tracking-tighter text-white italic uppercase">Bypass Protocol: Broadcast</h3>
-        <p className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold">Transmit data packets to all registered manifestations.</p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-12">
-        <form onSubmit={handleBroadcast} className="space-y-6 bg-white/[0.02] border border-white/5 p-8 rounded-3xl relative z-10">
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">Signal Title</label>
-            <input 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 p-4 text-white font-display tracking-tight focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">Data Payload (Body)</label>
-            <textarea 
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={3}
-              className="w-full bg-white/5 border border-white/10 p-4 text-white font-sans text-sm focus:border-primary focus:outline-none transition-all resize-none"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">Target Vector (URL)</label>
-            <input 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 p-4 text-white font-mono text-[10px] tracking-widest focus:border-primary focus:outline-none transition-all"
-            />
-          </div>
-          <Button 
-            type="submit"
-            disabled={loading} 
-            className="w-full primary-gradient h-14 text-[10px] font-black tracking-[0.4em] uppercase"
-          >
-            {loading ? "TRANSMITTING..." : "BEYOND THE GRID: BROADCAST"}
-          </Button>
-          {stats && (
-            <div className="pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <p className="text-primary font-display text-2xl">{stats.sent}</p>
-                <p className="text-[8px] uppercase tracking-widest text-white/40">Success</p>
-              </div>
-              <div className="text-center">
-                <p className="text-red-500 font-display text-2xl">{stats.removed}</p>
-                <p className="text-[8px] uppercase tracking-widest text-white/40">Purged</p>
-              </div>
-            </div>
-          )}
-        </form>
-
-        <div className="space-y-6">
-          <label className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold block">Terminal Simulation</label>
-          <div className="glass p-6 border-white/10 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                <Radio size={20} className="text-primary" />
-              </div>
-              <div className="overflow-hidden">
-                <p className="text-white font-bold text-sm tracking-tight truncate">{title || "Untitled Signal"}</p>
-                <p className="text-white/40 text-[10px] tracking-tight truncate">{body || "No payload content..."}</p>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-white/5 flex justify-between items-center">
-              <span className="text-[8px] text-white/20 uppercase tracking-widest font-bold font-mono">Signal: Valid</span>
-              <span className="text-[8px] text-primary uppercase tracking-widest font-bold font-mono">Target: {url}</span>
-            </div>
-          </div>
-          <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl italic">
-            <p className="text-[10px] text-white/60 leading-relaxed font-bold uppercase tracking-widest">
-              CAUTION: THIS SIGNAL WILL PENETRATE ALL ACTIVE USER TERMINALS. ENSURE DATA INTEGRITY BEFORE TRANSMISSION.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefresh: () => void, showToast: (m: string, t?: 'success' | 'error') => void }) => {
   const updateStatus = async (id: string, newStatus: string) => {
     await supabase.from('orders').update({ status: newStatus }).eq('id', id);
@@ -1985,51 +1849,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js')
         .then(reg => {
           console.log('Service Worker registered:', reg);
-          registerPush();
         })
         .catch(err => console.error('SW Registration Error:', err));
     }
-  }, [user]);
-
-  const registerPush = async () => {
-    try {
-      // Check permission first
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.warn("Notification permission denied.");
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        // VAPID Public Key
-        const vapidPublicKey = 'BO_evzYtAO2GOfhgpzfU9B0aE2UBUKAp3EBdiz76q79-j3KubTH872rot7CWONEsaL7DBIce9cLp1DVgZYurMw8';
-        
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: vapidPublicKey
-        });
-      }
-
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          subscription, 
-          userId: user?.id || null 
-        })
-      });
-      console.log("Push Logistics Linked.");
-    } catch (err) {
-      console.warn("Push Subscription Error:", err);
-    }
-  };
+  }, []);
 
   const fetchGlobalData = async () => {
     const [pRes, cRes] = await Promise.all([
