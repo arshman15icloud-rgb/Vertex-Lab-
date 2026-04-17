@@ -41,6 +41,7 @@ interface CartItem {
 
 interface Order {
   id: string;
+  order_number?: number;
   created_at: string;
   customer_email: string;
   phone?: string;
@@ -1491,8 +1492,12 @@ const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefr
             ) : orders.map(o => (
               <tr key={o.id} className="border-b border-white/5 hover:bg-white/5 transition-all group">
                 <td className="py-6 md:py-8 px-2 md:px-4">
-                  <div className="text-primary font-bold text-[8px] md:text-[10px] uppercase tracking-widest">#{o.id.slice(0, 8).toUpperCase()}</div>
-                  <div className="text-[7px] md:text-[8px] text-white/30 font-mono mt-1">{new Date(o.created_at).toLocaleDateString()}</div>
+                  <div className="text-primary font-bold text-base md:text-lg tracking-tighter italic">
+                    #{o.order_number || o.id.slice(0, 8).toUpperCase()}
+                  </div>
+                  <div className="text-[7px] md:text-[8px] text-white/30 font-mono mt-1 uppercase tracking-widest font-bold">
+                    {new Date(o.created_at).toLocaleDateString()}
+                  </div>
                 </td>
                 <td className="py-6 md:py-8 px-2 md:px-4">
                   <div className="text-white font-bold text-[10px] md:text-xs tracking-tighter truncate max-w-[120px] md:max-w-none">{o.customer_email || 'ANONYMOUS'}</div>
@@ -1566,6 +1571,7 @@ export default function App() {
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [lastOrderNumber, setLastOrderNumber] = useState<number | null>(null);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [globalProducts, setGlobalProducts] = useState<Product[]>([]);
@@ -1749,13 +1755,21 @@ export default function App() {
         }))
       };
 
-      const { error } = await supabase.from('orders').insert([orderData]);
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select('order_number')
+        .single();
 
       if (error) {
         console.error("Checkout Error Details:", error);
         throw error;
       }
 
+      if (data) {
+        setLastOrderNumber(data.order_number);
+      }
+      
       setCheckoutSuccess(true);
       setCart([]);
     } catch (error: any) {
@@ -1877,8 +1891,14 @@ export default function App() {
                 </div>
                 <div className="space-y-4">
                   <h3 className="text-2xl font-display tracking-tighter text-white italic">ORDER PLACED!</h3>
+                  {lastOrderNumber && (
+                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Your Order Number</p>
+                      <p className="text-3xl font-display italic tracking-tighter text-white mt-1">#{lastOrderNumber}</p>
+                    </div>
+                  )}
                   <p className="text-[11px] uppercase tracking-widest text-white/60 leading-relaxed max-w-xs mx-auto">
-                    If you want to know about your order, like where it has reached or if it has been accepted, click the message icon and contact Vertex Lab. Thank you!
+                    Please save your order number. If you want to know about your order, like where it has reached or if it has been accepted, click the message icon and contact Vertex Lab. Thank you!
                   </p>
                 </div>
                 <Button 
