@@ -13,6 +13,13 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // Skip API and Supabase requests
+  if (url.pathname.startsWith('/api') || url.hostname.includes('supabase')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))

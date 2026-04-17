@@ -4,7 +4,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
-import bodyParser from "body-parser";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +25,13 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(bodyParser.json());
+  app.use(express.json());
+  
+  // Basic Logger
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
 
   // API Routes
   app.post("/api/push/subscribe", async (req, res) => {
@@ -53,7 +58,8 @@ async function startServer() {
     console.log(`Broadcast Signal Received: ${title} from ${adminEmail}`);
 
     // Fast check for admin - in a real app use proper auth
-    if (adminEmail !== "admin@vertexlab@gmail.com" || adminPass !== "Vertexlab0123") {
+    if (adminEmail !== "admin@vertexlab.com" || adminPass !== "Vertexlab0123") {
+      console.warn(`Unauthorized Signal Attempt: ${adminEmail}`);
       return res.status(403).json({ error: "Unauthorized" });
     }
 
@@ -99,6 +105,7 @@ async function startServer() {
         sentCount: results.filter(r => r.status === 'fulfilled').length,
         removedCount: invalidEndpoints.length
       });
+      console.log(`Broadcast Complete: ${results.filter(r => r.status === 'fulfilled').length} transmissions.`);
     } catch (error: any) {
       console.error("Broadcast Error:", error);
       res.status(500).json({ error: error.message });

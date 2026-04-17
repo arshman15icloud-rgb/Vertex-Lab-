@@ -1503,7 +1503,7 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
           title,
           body,
           url,
-          adminEmail: "admin@vertexlab@gmail.com",
+          adminEmail: "admin@vertexlab.com",
           adminPass: "Vertexlab0123"
         })
       });
@@ -1512,7 +1512,7 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
       try {
         data = await response.json();
       } catch (e) {
-        throw new Error(`Server returned status ${response.status}`);
+        throw new Error(`Critical Logic Error (Status: ${response.status}). The server might be unreachable.`);
       }
 
       if (response.ok && data.success) {
@@ -1985,13 +1985,25 @@ export default function App() {
   };
 
   useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window && user) {
-      registerPush();
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          console.log('Service Worker registered:', reg);
+          registerPush();
+        })
+        .catch(err => console.error('SW Registration Error:', err));
     }
   }, [user]);
 
   const registerPush = async () => {
     try {
+      // Check permission first
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        console.warn("Notification permission denied.");
+        return;
+      }
+
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
 
@@ -2008,8 +2020,12 @@ export default function App() {
       await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription, userId: user.id })
+        body: JSON.stringify({ 
+          subscription, 
+          userId: user?.id || null 
+        })
       });
+      console.log("Push Logistics Linked.");
     } catch (err) {
       console.warn("Push Subscription Error:", err);
     }
