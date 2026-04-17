@@ -1492,6 +1492,7 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
 
   const handleBroadcast = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Broadcast Signal Initiated...");
     setLoading(true);
     setStats(null);
     try {
@@ -1506,12 +1507,19 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
           adminPass: "Vertexlab0123"
         })
       });
-      const data = await response.json();
-      if (data.success) {
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      if (response.ok && data.success) {
         showToast(`Manifest Broadcasted to ${data.sentCount} units!`);
         setStats({ sent: data.sentCount, removed: data.removedCount });
       } else {
-        throw new Error(data.error || "Broadcast failed");
+        throw new Error(data.error || data.message || "Broadcast failed");
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -1528,7 +1536,7 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
       </div>
 
       <div className="grid md:grid-cols-2 gap-12">
-        <form onSubmit={handleBroadcast} className="space-y-6 glass p-8">
+        <form onSubmit={handleBroadcast} className="space-y-6 bg-white/[0.02] border border-white/5 p-8 rounded-3xl relative z-10">
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">Signal Title</label>
             <input 
@@ -1554,7 +1562,11 @@ const AdminBroadcast = ({ showToast }: { showToast: (m: string, t?: 'success' | 
               className="w-full bg-white/5 border border-white/10 p-4 text-white font-mono text-[10px] tracking-widest focus:border-primary focus:outline-none transition-all"
             />
           </div>
-          <Button disabled={loading} className="w-full primary-gradient h-14 text-[10px] font-black tracking-[0.4em] uppercase">
+          <Button 
+            type="submit"
+            disabled={loading} 
+            className="w-full primary-gradient h-14 text-[10px] font-black tracking-[0.4em] uppercase"
+          >
             {loading ? "TRANSMITTING..." : "BEYOND THE GRID: BROADCAST"}
           </Button>
           {stats && (

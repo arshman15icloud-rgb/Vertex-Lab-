@@ -50,6 +50,7 @@ async function startServer() {
 
   app.post("/api/push/broadcast", async (req, res) => {
     const { title, body, icon, url, adminEmail, adminPass } = req.body;
+    console.log(`Broadcast Signal Received: ${title} from ${adminEmail}`);
 
     // Fast check for admin - in a real app use proper auth
     if (adminEmail !== "admin@vertexlab@gmail.com" || adminPass !== "Vertexlab0123") {
