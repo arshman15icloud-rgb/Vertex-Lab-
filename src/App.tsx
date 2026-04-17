@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ReactNode } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Menu, Search, User, ShoppingBag, X, ChevronRight, ChevronLeft, Plus, Minus, Trash2, LogOut, ArrowLeft, LayoutDashboard, Package, List, ShoppingCart, Save, Edit, Trash, Upload, Zap, Users, MessageCircle, Check } from "lucide-react";
+import { Menu, Search, User, ShoppingBag, X, ChevronRight, ChevronLeft, Plus, Minus, Trash2, LogOut, ArrowLeft, LayoutDashboard, Package, List, ShoppingCart, Save, Edit, Trash, Upload, Zap, Users, MessageCircle, Check, Clock, Truck, ShieldCheck } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -137,6 +137,13 @@ const Navbar = ({
                   >
                     VAULT
                   </Link>
+                  <Link
+                    to="/tracking"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-4xl md:text-8xl font-heading font-black tracking-tighter text-foreground hover:text-primary transition-all hover:italic hover:translate-x-4 inline-block"
+                  >
+                    TRACK
+                  </Link>
                   {user?.email === "admin@vertexlab@gmail.com" && (
                     <Link
                       to="/admin"
@@ -156,6 +163,7 @@ const Navbar = ({
           <div className="hidden lg:flex items-center gap-8 text-[11px] font-black uppercase tracking-[0.4em] text-white/30">
             <Link to="/products" className="hover:text-white transition-all hover:tracking-[0.6em]">Collection</Link>
             <Link to="/categories" className="hover:text-white transition-all hover:tracking-[0.6em]">Taxonomy</Link>
+            <Link to="/tracking" className="hover:text-white transition-all hover:tracking-[0.6em]">Tracking</Link>
           </div>
         </div>
 
@@ -1558,6 +1566,219 @@ const AdminOrders = ({ orders, onRefresh, showToast }: { orders: Order[], onRefr
   );
 };
 
+const OrderTrackingPage = () => {
+  const [orderId, setOrderId] = useState("");
+  const [email, setEmail] = useState("");
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleTrack = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderId || !email) return;
+    setLoading(true);
+    setError("");
+    setOrder(null);
+
+    try {
+      // Support both order_number (integer) and tracking ID (UUID)
+      const isNumeric = /^\d+$/.test(orderId);
+      let queryRef = supabase.from('orders').select('*').ilike('customer_email', email.trim());
+
+      if (isNumeric) {
+        queryRef = queryRef.eq('order_number', parseInt(orderId));
+      } else {
+        queryRef = queryRef.eq('id', orderId);
+      }
+
+      const { data, error: fetchError } = await queryRef.single();
+
+      if (fetchError || !data) {
+        throw new Error("MANIFEST NOT FOUND. PLEASE VERIFY CREDENTIALS.");
+      }
+
+      setOrder(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusInfo = (status: string) => {
+    switch(status.toLowerCase()) {
+      case 'pending': return { icon: <Clock size={20} className="text-yellow-500" />, label: "Order Received", desc: "We've received your data and are preparing the manifest." };
+      case 'processing': return { icon: <Zap size={20} className="text-primary" />, label: "In Synthesis", desc: "Your items are being synthesized and quality checked." };
+      case 'shipped': return { icon: <Truck size={20} className="text-blue-500" />, label: "In Transit", desc: "Your manifest is moving through the logistic grid." };
+      case 'completed': return { icon: <ShieldCheck size={20} className="text-green-500" />, label: "Delivered", desc: "Package has been successfully handed over." };
+      case 'cancelled': return { icon: <X size={20} className="text-red-500" />, label: "Aborted", desc: "This manifest has been terminated." };
+      default: return { icon: <Package size={20} />, label: status, desc: "Status unknown." };
+    }
+  };
+
+  const statusSteps = ['pending', 'processing', 'shipped', 'completed'];
+  const currentIndex = statusSteps.indexOf(order?.status?.toLowerCase() || "");
+
+  return (
+    <div className="min-h-screen pt-32 pb-20 px-6 max-w-4xl mx-auto">
+      <div className="text-center mb-16">
+        <span className="text-[10px] tracking-[0.5em] uppercase text-primary font-bold block mb-4">LOGISTICS GRID</span>
+        <h1 className="text-5xl md:text-8xl font-display tracking-tighter text-white italic leading-none">TRACK <span className="text-primary brand-text-glow">MANIFEST</span></h1>
+      </div>
+
+      {!order ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass p-8 md:p-12 space-y-8"
+        >
+          <form onSubmit={handleTrack} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Order # or Manifest ID</label>
+              <input 
+                type="text" 
+                placeholder="E.G. 1001" 
+                value={orderId}
+                onChange={(e) => setOrderId(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 p-5 text-white font-mono tracking-widest focus:border-primary focus:outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Registered Email</label>
+              <input 
+                type="email" 
+                placeholder="YOUR@IDENTITY.COM" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 p-5 text-white font-mono tracking-widest focus:border-primary focus:outline-none transition-all uppercase"
+              />
+            </div>
+            <Button disabled={loading} className="w-full primary-gradient h-16 text-[12px] font-black tracking-[0.3em] uppercase">
+              {loading ? "INITIALIZING FETCH..." : "RECOVER DATA"}
+            </Button>
+            {error && <p className="text-red-500 text-[10px] font-bold tracking-widest text-center mt-4">ERROR: {error}</p>}
+          </form>
+        </motion.div>
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="space-y-8"
+        >
+          <div className="glass p-8 md:p-12 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10">
+               <Package size={120} />
+             </div>
+             
+             <div className="flex flex-col md:flex-row justify-between gap-8 relative z-10 border-b border-white/5 pb-8">
+               <div className="space-y-2">
+                 <p className="text-primary text-[10px] font-bold uppercase tracking-widest">MANIFEST RECORD NO.</p>
+                 <h2 className="text-4xl md:text-6xl font-display italic tracking-tighter text-white">#{order.order_number || order.id.slice(0, 8).toUpperCase()}</h2>
+                 <p className="text-white/30 text-[10px] uppercase tracking-widest font-bold">INITIATED: {new Date(order.created_at).toLocaleString()}</p>
+               </div>
+               <div className="md:text-right space-y-2">
+                 <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest">CURRENT STATUS</p>
+                 <Badge className={cn(
+                    "border-none rounded-none uppercase text-xs px-6 py-2 font-black tracking-widest",
+                    order.status === 'completed' ? "bg-green-500 text-white" : 
+                    order.status === 'pending' ? "bg-yellow-500 text-black" : 
+                    "bg-primary text-white brand-glow"
+                  )}>
+                    {order.status}
+                  </Badge>
+               </div>
+             </div>
+
+             <div className="py-12 relative">
+               <div className="hidden md:flex justify-between relative z-10">
+                 {statusSteps.map((step, idx) => {
+                   const isActive = currentIndex >= idx;
+                   const info = getStatusInfo(step);
+                   return (
+                     <div key={step} className="flex flex-col items-center w-1/4 group">
+                       <div className={cn(
+                         "w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-700",
+                         isActive ? "border-primary bg-primary/10 brand-glow text-primary" : "border-white/10 bg-white/5 text-white/20"
+                       )}>
+                         {info.icon}
+                       </div>
+                       <p className={cn(
+                         "mt-4 text-[8px] uppercase tracking-widest font-black transition-colors",
+                         isActive ? "text-white" : "text-white/20"
+                       )}>{info.label}</p>
+                     </div>
+                   );
+                 })}
+                 <div className="absolute top-6 left-0 right-0 h-[2px] bg-white/5 -z-0">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${currentIndex >= 0 ? (currentIndex / (statusSteps.length - 1)) * 100 : 0}%` }}
+                      className="h-full bg-primary brand-glow"
+                    />
+                 </div>
+               </div>
+
+               {/* Mobile Status */}
+               <div className="md:hidden space-y-8">
+                  {statusSteps.map((step, idx) => {
+                    const isActive = currentIndex >= idx;
+                    const info = getStatusInfo(step);
+                    return (
+                      <div key={step} className="flex gap-6">
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center border transition-all shrink-0",
+                          isActive ? "border-primary bg-primary/10 brand-glow text-primary" : "border-white/10 bg-white/5 text-white/20"
+                        )}>
+                          {info.icon}
+                        </div>
+                        <div className="space-y-1">
+                          <p className={cn(
+                             "text-[10px] uppercase font-black tracking-widest",
+                             isActive ? "text-white" : "text-white/20"
+                          )}>{info.label}</p>
+                          {isActive && idx === currentIndex && <p className="text-[10px] text-white/40 leading-relaxed font-bold">{info.desc}</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+               </div>
+             </div>
+
+             <div className="border-t border-white/5 pt-12">
+               <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-white/30 mb-8">MANIFEST CONTENTS</h4>
+               <div className="space-y-6">
+                 {order.items?.map((item: any, i: number) => (
+                   <div key={i} className="flex justify-between items-center group">
+                      <div className="flex items-center gap-6">
+                         <div className="bg-primary/20 text-primary p-3 font-black text-xs">0{item.quantity}</div>
+                         <div>
+                            <p className="text-white font-bold uppercase tracking-widest text-xs group-hover:text-primary transition-colors">{item.name}</p>
+                            <p className="text-[8px] text-white/30 font-bold uppercase tracking-[0.3em] mt-1">{[item.size, item.color].filter(v => v !== 'N/A').join(' • ')}</p>
+                         </div>
+                      </div>
+                      <p className="text-white font-display italic text-lg pr-2">Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                   </div>
+                 ))}
+               </div>
+               <div className="mt-12 pt-8 border-t border-dashed border-white/10 flex justify-between items-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">TOTAL VALUE</p>
+                  <p className="text-5xl md:text-6xl font-display italic tracking-tight text-white">Rs. {order.total.toLocaleString()}</p>
+               </div>
+             </div>
+          </div>
+          <Button 
+            variant="outline" 
+            className="w-full border-white/10 text-white/40 hover:text-white hover:bg-white/5 rounded-none py-6 uppercase tracking-[0.3em] text-[10px] font-bold"
+            onClick={() => setOrder(null)}
+          >
+            Track Different Manifest
+          </Button>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -1659,7 +1880,13 @@ export default function App() {
 
     try {
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password: pass });
+        const { data, error } = await supabase.auth.signUp({ 
+          email, 
+          password: pass,
+          options: {
+            emailRedirectTo: "https://vertexlab-official.vercel.app",
+          }
+        });
         if (error) throw error;
         
         if (data.user && phone) {
@@ -1801,6 +2028,7 @@ export default function App() {
           <Route path="/products" element={<AllProductsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
           <Route path="/categories" element={<CategoriesPage categories={globalCategories} products={globalProducts} />} />
           <Route path="/product/:id" element={<ProductDetailPage products={globalProducts} onAddToCart={addToCart} />} />
+          <Route path="/tracking" element={<OrderTrackingPage />} />
           <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />} />
         </Routes>
 
@@ -1838,6 +2066,7 @@ export default function App() {
             <div className="pt-12 border-t border-white/5 w-full flex flex-col md:flex-row justify-between items-center gap-6">
               <p className="text-[10px] uppercase tracking-widest text-white/20 font-bold">© 2024 Vertex Store. All Rights Reserved.</p>
               <div className="flex gap-6 text-[10px] uppercase tracking-widest text-white/20 font-bold">
+                <Link to="/tracking" className="hover:text-primary transition-colors">Tracking</Link>
                 <a href="#" className="hover:text-white transition-colors">Privacy</a>
                 <a href="#" className="hover:text-white transition-colors">Terms</a>
                 <a href="#" className="hover:text-white transition-colors">Shipping</a>
