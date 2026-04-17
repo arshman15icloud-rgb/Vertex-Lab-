@@ -853,24 +853,33 @@ const AdminPanel = ({ user, showToast, globalProducts, globalCategories }: { use
   const fetchData = async (isInitial = false) => {
     if (isInitial) setLoading(true);
     
-    const [pRes, cRes, oRes, uRes] = await Promise.all([
-      supabase.from('products').select('*').order('created_at', { ascending: false }),
-      supabase.from('categories').select('*').order('name'),
-      supabase.from('orders').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('created_at', { ascending: false })
-    ]);
-    
-    if (pRes.error) console.error("Products Fetch Error:", pRes.error);
-    if (cRes.error) console.error("Categories Fetch Error:", cRes.error);
-    if (oRes.error) console.error("Orders Fetch Error:", oRes.error);
-    if (uRes.error) console.error("Users Fetch Error:", uRes.error);
+    try {
+      const [pRes, cRes, oRes, uRes] = await Promise.all([
+        supabase.from('products').select('*').order('created_at', { ascending: false }),
+        supabase.from('categories').select('*').order('name'),
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('profiles').select('*').order('created_at', { ascending: false })
+      ]);
+      
+      if (pRes.error) throw pRes.error;
+      if (cRes.error) throw cRes.error;
+      
+      // If orders specifically has an error (like RLS), we'll catch it and show it
+      if (oRes.error) {
+        console.error("Orders Sync Error:", oRes.error);
+        showToast("Orders Sync Failed: " + oRes.error.message, 'error');
+      }
 
-    if (pRes.data) setProducts(pRes.data);
-    if (cRes.data) setCategories(cRes.data);
-    if (oRes.data) setOrders(oRes.data);
-    if (uRes.data) setUsers(uRes.data);
-    
-    if (isInitial) setLoading(false);
+      if (pRes.data) setProducts(pRes.data);
+      if (cRes.data) setCategories(cRes.data);
+      if (oRes.data) setOrders(oRes.data);
+      if (uRes.data) setUsers(uRes.data);
+    } catch (err: any) {
+      console.error("Admin Fetch Error:", err);
+      showToast("Sync Error: " + (err.message || "Unknown error"), 'error');
+    } finally {
+      if (isInitial) setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -1593,8 +1602,18 @@ const OrderTrackingPage = () => {
 
       const { data, error: fetchError } = await queryRef.single();
 
-      if (fetchError || !data) {
-        throw new Error("MANIFEST NOT FOUND. PLEASE VERIFY CREDENTIALS.");
+      if (fetchError) {
+        console.error("Tracking Fetch Error:", fetchError);
+        if (fetchError.code === 'PGRST116') {
+          throw new Error("MANIFEST NOT FOUND. PLEASE VERIFY ORDER # AND EMAIL.");
+        } else if (fetchError.code === '42501') {
+          throw new Error("ACCESS DENIED. PLEASE ENSURE ADMIN HAS ENABLED PUBLIC TRACKING POLICIES.");
+        }
+        throw new Error(fetchError.message);
+      }
+
+      if (!data) {
+        throw new Error("MANIFEST DATA CORRUPTED OR EMPTY.");
       }
 
       setOrder(data);
@@ -1632,12 +1651,19 @@ const OrderTrackingPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="glass p-8 md:p-12 space-y-8"
         >
-          <form onSubmit={handleTrack} className="space-y-6">
+          <form 
+            onSubmit={(e) => {
+              console.log("Form Submitted");
+              handleTrack(e);
+            }} 
+            className="space-y-6"
+          >
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1">Order # or Manifest ID</label>
               <input 
                 type="text" 
                 placeholder="E.G. 1001" 
+                required
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 p-5 text-white font-mono tracking-widest focus:border-primary focus:outline-none transition-all"
@@ -1648,15 +1674,33 @@ const OrderTrackingPage = () => {
               <input 
                 type="email" 
                 placeholder="YOUR@IDENTITY.COM" 
+                required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 p-5 text-white font-mono tracking-widest focus:border-primary focus:outline-none transition-all uppercase"
               />
             </div>
-            <Button disabled={loading} className="w-full primary-gradient h-16 text-[12px] font-black tracking-[0.3em] uppercase">
+            <Button 
+              type="submit"
+              disabled={loading} 
+              className="w-full primary-gradient h-16 text-[12px] font-black tracking-[0.3em] uppercase cursor-pointer"
+            >
               {loading ? "INITIALIZING FETCH..." : "RECOVER DATA"}
             </Button>
-            {error && <p className="text-red-500 text-[10px] font-bold tracking-widest text-center mt-4">ERROR: {error}</p>}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg mt-4"
+              >
+                <p className="text-red-500 text-[10px] font-bold tracking-widest text-center uppercase">
+                  Logistics Error: {error}
+                </p>
+                <p className="text-white/20 text-[8px] text-center mt-2 uppercase tracking-tighter italic">
+                  Tip: Ensure Admin has run the SQL RLS track policy.
+                </p>
+              </motion.div>
+            )}
           </form>
         </motion.div>
       ) : (
@@ -1895,7 +1939,12 @@ export default function App() {
           ]);
         }
         
-        showToast("Check your email for confirmation!");
+        if (data.session) {
+          showToast("Account created and synchronized!");
+          setIsAccountOpen(false);
+        } else {
+          showToast("Check your email (if enabled) to activate!");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
         if (error) throw error;
@@ -2121,9 +2170,22 @@ export default function App() {
                 <div className="space-y-4">
                   <h3 className="text-2xl font-display tracking-tighter text-white italic">ORDER PLACED!</h3>
                   {lastOrderNumber && (
-                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl">
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Your Order Number</p>
-                      <p className="text-3xl font-display italic tracking-tighter text-white mt-1">#{lastOrderNumber}</p>
+                    <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl space-y-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-primary font-bold">Your Order Number</p>
+                        <p className="text-3xl font-display italic tracking-tighter text-white mt-1">#{lastOrderNumber}</p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[8px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 w-full border border-primary/10"
+                        onClick={() => {
+                          navigator.clipboard.writeText(lastOrderNumber.toString());
+                          showToast("Order Number Copied");
+                        }}
+                      >
+                        Copy Number
+                      </Button>
                     </div>
                   )}
                   <p className="text-[11px] uppercase tracking-widest text-white/60 leading-relaxed max-w-xs mx-auto">
