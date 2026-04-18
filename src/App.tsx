@@ -233,7 +233,7 @@ const AllProductsPage = ({ products, loading, onAddToCart }: { products: Product
           <span className="text-[10px] tracking-[0.5em] uppercase text-primary font-bold block">
             {categoryFilter ? `Category: ${categoryFilter}` : "Premium Collection"}
           </span>
-          <h2 className="text-5xl md:text-8xl font-display tracking-tighter text-white leading-none">
+          <h2 className="text-3xl sm:text-5xl md:text-8xl font-display tracking-tighter text-white leading-none">
             {categoryFilter ? categoryFilter.toUpperCase() : "ALL"} <span className="text-primary brand-text-glow">{categoryFilter ? "ITEMS" : "PRODUCTS"}</span>
           </h2>
           <p className="text-white/20 text-[10px] uppercase tracking-[0.3em] font-bold">{filteredProducts.length} Items Found</p>
@@ -349,7 +349,7 @@ const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: 
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
           
           {product.badge && (
-            <Badge className="absolute top-6 left-6 primary-gradient text-white text-[9px] font-black tracking-[0.2em] uppercase border-none rounded-full py-1.5 px-4 brand-glow shadow-xl">
+            <Badge className="absolute top-3 left-3 sm:top-6 sm:left-6 primary-gradient text-white text-[8px] sm:text-[9px] font-black tracking-[0.2em] uppercase border-none rounded-full py-1 sm:py-1.5 px-3 sm:px-4 brand-glow shadow-xl">
               {product.badge}
             </Badge>
           )}
@@ -362,11 +362,11 @@ const ProductCard = ({ product, onAddToCart }: { product: Product; onAddToCart: 
         </div>
       </Link>
       <div className="space-y-3 px-2">
-        <div className="flex justify-between items-start gap-4">
-          <h4 className="text-white font-heading font-black text-lg md:text-xl tracking-tighter leading-none group-hover:text-primary transition-colors uppercase">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-4">
+          <h4 className="text-white font-heading font-black text-base sm:text-lg md:text-xl tracking-tighter leading-tight group-hover:text-primary transition-colors uppercase">
             {product.name}
           </h4>
-          <p className="text-primary font-heading font-black text-lg md:text-xl tracking-tighter shrink-0">
+          <p className="text-primary font-heading font-black text-lg sm:text-xl tracking-tighter shrink-0">
             Rs. {product.price.toLocaleString()}
           </p>
         </div>
@@ -449,7 +449,7 @@ const HomePage = ({ products, categories, loading, onAddToCart }: { products: Pr
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-24 gap-8">
           <div className="space-y-4">
             <span className="text-[10px] tracking-[0.5em] uppercase text-primary font-bold block">Vertex Taxonomy</span>
-            <h3 className="text-4xl md:text-7xl font-display tracking-tighter text-white leading-none">
+            <h3 className="text-3xl sm:text-4xl md:text-7xl font-display tracking-tighter text-white leading-none">
               SHOP BY <span className="text-primary brand-text-glow italic">CATEGORY</span>
             </h3>
           </div>
@@ -496,7 +496,7 @@ const HomePage = ({ products, categories, loading, onAddToCart }: { products: Pr
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 md:mb-24 gap-8">
           <div className="space-y-4">
             <span className="text-[10px] tracking-[0.5em] uppercase text-primary font-bold block">Curated Selection</span>
-            <h3 className="text-4xl md:text-7xl font-display tracking-tighter text-white leading-none">
+            <h3 className="text-3xl sm:text-4xl md:text-7xl font-display tracking-tighter text-white leading-none">
               NEW <span className="text-primary brand-text-glow">ARRIVALS</span>
             </h3>
           </div>
@@ -589,10 +589,10 @@ const ProductDetailPage = ({ products, onAddToCart }: { products: Product[]; onA
               <Badge className="bg-primary/10 text-primary rounded-full border border-primary/20 px-4 py-1 uppercase tracking-widest text-[10px] font-bold">{product.category}</Badge>
               <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">Ref. #{product.id.slice(0, 8).toUpperCase()}</span>
             </div>
-            <h1 className="text-4xl md:text-8xl font-heading font-black tracking-tighter text-white leading-none uppercase">
+            <h1 className="text-3xl sm:text-4xl md:text-8xl font-heading font-black tracking-tighter text-white leading-[0.9] uppercase">
               {product.name}
             </h1>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
               <span className="text-3xl md:text-6xl font-heading font-black text-white">Rs. {product.price.toLocaleString()}</span>
               {product.original_price > product.price && (
                 <span className="text-xl md:text-3xl text-white/20 line-through font-heading font-black">Rs. {product.original_price.toLocaleString()}</span>
