@@ -1824,8 +1824,10 @@ const OrderTrackingPage = () => {
 };
 
 export default function App() {
+  const [isHydrated, setIsHydrated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem('vertex_store_cart');
       return saved ? JSON.parse(saved) : [];
@@ -1918,8 +1920,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('vertex_store_cart', JSON.stringify(cart));
-  }, [cart]);
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('vertex_store_cart', JSON.stringify(cart));
+    }
+  }, [cart, isHydrated]);
 
   const handleLogin = async (email: string, pass: string, isSignUp: boolean, phone?: string) => {
     // --- ADMIN BYPASS ---
@@ -2063,9 +2071,22 @@ export default function App() {
     }
   };
 
+  if (!isHydrated) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 border-2 border-primary/20 rounded-full animate-ping" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-4 h-4 bg-primary rounded-full animate-pulse shadow-[0_0_20px_rgba(255,107,0,0.8)]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Router>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white">
+      <div className="min-h-screen bg-black text-foreground selection:bg-primary selection:text-white">
         {toast && (
           <div className={cn(
             "fixed top-4 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 border text-[10px] font-bold uppercase tracking-widest brand-glow animate-in fade-in slide-in-from-top-4",
@@ -2082,14 +2103,40 @@ export default function App() {
           categories={globalCategories}
         />
 
-        <Routes>
-          <Route path="/" element={<HomePage products={globalProducts} categories={globalCategories} loading={productsLoading} onAddToCart={addToCart} />} />
-          <Route path="/products" element={<AllProductsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />} />
-          <Route path="/categories" element={<CategoriesPage categories={globalCategories} products={globalProducts} />} />
-          <Route path="/product/:id" element={<ProductDetailPage products={globalProducts} onAddToCart={addToCart} />} />
-          <Route path="/tracking" element={<OrderTrackingPage />} />
-          <Route path="/admin" element={<AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes>
+            <Route path="/" element={
+              <PageTransition>
+                <HomePage products={globalProducts} categories={globalCategories} loading={productsLoading} onAddToCart={addToCart} />
+              </PageTransition>
+            } />
+            <Route path="/products" element={
+              <PageTransition>
+                <AllProductsPage products={globalProducts} loading={productsLoading} onAddToCart={addToCart} />
+              </PageTransition>
+            } />
+            <Route path="/categories" element={
+              <PageTransition>
+                <CategoriesPage categories={globalCategories} products={globalProducts} />
+              </PageTransition>
+            } />
+            <Route path="/product/:id" element={
+              <PageTransition>
+                <ProductDetailPage products={globalProducts} onAddToCart={addToCart} />
+              </PageTransition>
+            } />
+            <Route path="/tracking" element={
+              <PageTransition>
+                <OrderTrackingPage />
+              </PageTransition>
+            } />
+            <Route path="/admin" element={
+              <PageTransition>
+                <AdminPanel user={user} showToast={showToast} globalProducts={globalProducts} globalCategories={globalCategories} />
+              </PageTransition>
+            } />
+          </Routes>
+        </AnimatePresence>
 
         {/* Footer */}
         <footer className="bg-black py-32 md:py-48 px-6 mt-40 border-t border-white/5 relative overflow-hidden">
@@ -2290,6 +2337,19 @@ export default function App() {
         </Sheet>
       </div>
     </Router>
+  );
+}
+
+function PageTransition({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.02 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
